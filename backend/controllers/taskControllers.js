@@ -2,6 +2,15 @@ const Task = require("../models/Task");
 const User = require("../models/User");
 const { validateObjectId } = require("../utils/validation");
 const {sendMail} = require('../utils/nodemailer');
+const Queue = require('bull');
+const emailQueue = new Queue('emailQueue');
+
+// Process jobs
+emailQueue.process(async (job) => {
+  const { email, subject, body } = job.data;
+  // Implement your email sending logic here
+  sendMail(email, subject, body);
+});
 
 // Get all tasks for the user
 exports.getTasks = async (req, res) => {
@@ -48,14 +57,11 @@ exports.postTask = async (req, res) => {
   try {
     const { description, tillDate, atWhatTime } = req.body;
 
-    // Validate required fields
     if (!description || !tillDate || !atWhatTime) {
-      return res
-        .status(400)
-        .json({
-          status: false,
-          msg: "All fields (description, tillDate, atWhatTime) are required",
-        });
+      return res.status(400).json({
+        status: false,
+        msg: "All fields (description, tillDate, atWhatTime) are required",
+      });
     }
 
     const task = await Task.create({
@@ -64,35 +70,33 @@ exports.postTask = async (req, res) => {
       tillDate: new Date(tillDate),
       atWhatTime,
     });
-    // Parse tillDate and atWhatTime to create a target date
+
     const targetDate = new Date(task.tillDate);
-
-    // Split the time (atWhatTime) into hours and minutes, assuming it's in the format 'HH:mm'
     const [hours, minutes] = atWhatTime.split(":").map(Number);
+    targetDate.setHours(hours, minutes, 0, 0);
 
-    // Set the time on the targetDate
-    targetDate.setHours(hours, minutes, 0, 0); // Set hours, minutes, and reset seconds and milliseconds
     const currentTime = Date.now();
     const timeout = targetDate.getTime() - currentTime;
-    const USER = await User.findById(req.user.id);
-    const email = USER.email;
-    const emailBody = `<html></html>`
 
-    setTimeout(() => {
-      if(!email) return;
-      sendMail(email, `${description} pending`, emailBody);
-    }, timeout);
+    if (timeout > 0) {
+      const USER = await User.findById(req.user.id);
+      const email = USER.email;
+      const emailBody = `<html>${description} is pending</html>`;
 
-    res
-      .status(200)
-      .json({ task, status: true, msg: "Task created successfully.." });
+      // Schedule the email using Bull
+      emailQueue.add(
+        { email, subject: `${description} Pending`, body: emailBody },
+        { delay: timeout }
+      );
+    }
+
+    res.status(200).json({ task, status: true, msg: "Task created successfully.." });
   } catch (err) {
     console.error(err);
-    return res
-      .status(500)
-      .json({ status: false, msg: "Internal Server Error" });
+    res.status(500).json({ status: false, msg: "Internal Server Error" });
   }
 };
+
 
 exports.putTask = async (req, res) => {
   try {
