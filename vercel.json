@@ -1,11 +1,5 @@
 {
   "version": 2,
-  "functions": {
-    "api/task.js": {
-      "runtime": "nodejs18.x",
-      "maxDuration": 899
-    }
-  },
   "builds": [
     {
       "src": "backend/app.js",
