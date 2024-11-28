@@ -152,6 +152,9 @@ const Task = ({ Dark, setDark }) => {
                     id="tillDate"
                     value={formatDate(new Date(formData.tillDate))}
                     onChange={handleChange}
+                    style={{
+                      color: "black"
+                    }}
                     className="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                   {fieldError('tillDate')}
@@ -168,6 +171,9 @@ const Task = ({ Dark, setDark }) => {
                     id="atWhatTime"
                     value={formData.atWhatTime}
                     onChange={handleChange}
+                    style={{
+                      color: "black"
+                    }}
                     className="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                   {fieldError('atWhatTime')}
