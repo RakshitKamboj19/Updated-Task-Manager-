@@ -3,7 +3,7 @@
   "functions": {
     "api/task.js": {
       "runtime": "nodejs18.x",
-      "maxDuration": 86400
+      "maxDuration": 899
     }
   },
   "builds": [
